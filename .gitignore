@@ -1,0 +1,30 @@
+### Python runtime
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+### Local environment and secrets
+.env
+.env.*
+!.env.example
+
+### Generated data and logs
+data/
+logs/
+*.sqlite3
+*.db
+*.log
+*.tmp
+*.cache
+
+### Tooling and OS noise
+.streamlit/
+.DS_Store
+Thumbs.db

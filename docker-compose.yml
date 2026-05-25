@@ -1,0 +1,53 @@
+services:
+  app:
+    build: .
+    container_name: multimodal-doc-analyzer
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      APP_DATA_DIR: /app/data
+      APP_LOG_DIR: /app/logs
+      APP_DB_PATH: /app/data/app.sqlite3
+      APP_DEBUG: "false"
+    volumes:
+      - app-data:/app/data
+      - app-logs:/app/logs
+    command:
+      - streamlit
+      - run
+      - app/main.py
+      - --server.port=8501
+      - --server.address=0.0.0.0
+      - --server.headless=true
+    restart: unless-stopped
+
+  health:
+    build: .
+    container_name: multimodal-doc-analyzer-health
+    ports:
+      - "8502:8502"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      APP_DATA_DIR: /app/data
+      APP_LOG_DIR: /app/logs
+      APP_DB_PATH: /app/data/app.sqlite3
+    volumes:
+      - app-data:/app/data
+      - app-logs:/app/logs
+    command:
+      - uvicorn
+      - app.health_api:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8502"
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  app-logs:
