@@ -12,13 +12,14 @@ from __future__ import annotations
 
 import sys
 import os
+import tempfile
 
 import streamlit as st
 
 # Ensure the app package is importable whether run from root or app/
 sys.path.insert(0, os.path.dirname(__file__))
 
-from ocr_utils import extract_text, SUPPORTED_EXTENSIONS
+from ocr_utils import extract_text, extract_video_text, SUPPORTED_EXTENSIONS, VIDEO_EXTENSIONS
 from llm_utils import (
     summarize_text,
     answer_with_context,
@@ -226,10 +227,10 @@ tab_sum, tab_rag, tab_res, tab_about = st.tabs(
 
 with tab_sum:
     st.markdown("### Upload a Document")
-    supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+    supported = ", ".join(sorted(SUPPORTED_EXTENSIONS | VIDEO_EXTENSIONS))
     uploaded = st.file_uploader(
         f"Supported formats: {supported}",
-        type=["pdf", "docx", "jpg", "jpeg", "png"],
+        type=["pdf", "docx", "jpg", "jpeg", "png", "mp4", "mov", "avi"],
         key="uploader_sum",
     )
 
@@ -243,8 +244,17 @@ with tab_sum:
         elif uploaded.name != st.session_state["last_uploaded_name"]:
             # New file — extract
             with st.spinner("🔍 Extracting text via OCR…"):
+                tmp_path = None
                 try:
-                    text = extract_text(file_bytes, uploaded.name)
+                    _, ext = os.path.splitext(uploaded.name.lower())
+                    if ext in VIDEO_EXTENSIONS:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=ext or ".mp4") as tmp:
+                            tmp.write(file_bytes)
+                            tmp_path = tmp.name
+                        text = extract_video_text(tmp_path)
+                    else:
+                        text = extract_text(file_bytes, uploaded.name)
+
                     st.session_state["extracted_text"] = text
                     st.session_state["summary"] = ""
                     st.session_state["rag_collection"] = None
@@ -272,6 +282,9 @@ with tab_sum:
                         f'<div class="banner-err">❌ Extraction failed: {exc}</div>',
                         unsafe_allow_html=True,
                     )
+                finally:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
 
     if st.session_state["extracted_text"]:
         with st.expander("🔎 Extracted Text Preview", expanded=False):

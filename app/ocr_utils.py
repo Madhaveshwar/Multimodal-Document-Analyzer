@@ -1,7 +1,7 @@
 """
-ocr_utils.py — Text extraction from PDF / DOCX / image files.
+ocr_utils.py — Text extraction from PDF / DOCX / image / video files.
 
-Supports: JPEG, PNG, PDF (native + OCR fallback), DOCX.
+Supports: JPEG, PNG, PDF (native + OCR fallback), DOCX, MP4, MOV, AVI.
 Temp files are always cleaned up. Invalid files raise clear errors.
 """
 
@@ -10,8 +10,9 @@ from __future__ import annotations
 import io
 import os
 import tempfile
-from typing import List
+from typing import List, Set
 
+import cv2
 import pytesseract
 from PIL import Image, ImageFilter, ImageEnhance
 import pdfplumber
@@ -38,6 +39,9 @@ except ImportError:
     _PDF2IMAGE = False
 
 
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi"}
+
+
 # ── Preprocessing ─────────────────────────────────────────────────────────────
 
 def _preprocess_image(img: Image.Image) -> Image.Image:
@@ -59,6 +63,18 @@ def _ocr_image(img: Image.Image, preprocess: bool = True) -> str:
     if preprocess:
         img = _preprocess_image(img)
     return pytesseract.image_to_string(img)
+
+
+def _ocr_frame(frame) -> str:
+    """Run OCR on an OpenCV video frame."""
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(rgb_frame)
+    return _ocr_image(pil_image)
+
+
+def _normalize_ocr_text(text: str) -> str:
+    """Normalize OCR output so duplicate frame text can be skipped."""
+    return " ".join(text.split()).strip().lower()
 
 
 def _extract_pdf(file_bytes: bytes) -> str:
@@ -91,6 +107,69 @@ def _extract_docx(file_bytes: bytes) -> str:
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+def extract_video_text(video_path: str) -> str:
+    """Extract OCR text from video frames sampled every 2 seconds."""
+    _, ext = os.path.splitext(video_path.lower())
+    if ext not in VIDEO_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported video type '{ext}'. Supported: {', '.join(sorted(VIDEO_EXTENSIONS))}"
+        )
+
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found: {video_path}")
+
+    capture = cv2.VideoCapture(video_path)
+    if not capture.isOpened():
+        raise RuntimeError("Corrupted video or unsupported video file.")
+
+    try:
+        parts: List[str] = []
+        seen_text: Set[str] = set()
+        frame_interval_seconds = 2.0
+        fps = capture.get(cv2.CAP_PROP_FPS) or 0.0
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+
+        def _append_frame_text(frame_text: str) -> None:
+            normalized = _normalize_ocr_text(frame_text)
+            if normalized and normalized not in seen_text:
+                seen_text.add(normalized)
+                parts.append(frame_text.strip())
+
+        if fps > 0 and frame_count > 0:
+            frame_step = max(int(round(fps * frame_interval_seconds)), 1)
+            for frame_index in range(0, frame_count, frame_step):
+                capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                success, frame = capture.read()
+                if not success:
+                    continue
+                frame_text = _ocr_frame(frame)
+                _append_frame_text(frame_text)
+        else:
+            max_attempts = 300
+            timestamp_seconds = 0.0
+            attempts = 0
+            while attempts < max_attempts:
+                capture.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
+                success, frame = capture.read()
+                if not success:
+                    if parts:
+                        break
+                    attempts += 1
+                    timestamp_seconds += frame_interval_seconds
+                    continue
+                frame_text = _ocr_frame(frame)
+                _append_frame_text(frame_text)
+                attempts += 1
+                timestamp_seconds += frame_interval_seconds
+
+        if not parts:
+            raise RuntimeError("No OCR text extracted from video.")
+
+        return "\n\n".join(parts)
+    finally:
+        capture.release()
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
