@@ -16,16 +16,6 @@ import pytesseract
 from PIL import Image, ImageFilter, ImageEnhance
 import pdfplumber
 
-TESSERACT_PATHS = [
-    r"E:\GENAI\tesseract.exe",
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-]
-
-for path in TESSERACT_PATHS:
-    if os.path.exists(path):
-        pytesseract.pytesseract.tesseract_cmd = path
-        break
-
 
 def check_tesseract():
     try:
