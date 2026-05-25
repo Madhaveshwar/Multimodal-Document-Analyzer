@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ### Python runtime
 venv/
 .venv/
@@ -29,9 +28,3 @@ logs/
 .streamlit/
 .DS_Store
 Thumbs.db
-=======
-venv/
-__pycache__/
-.env
-*.pyc
->>>>>>> eb3e5fd1243b399c1b484e8468c3e4b3de7c7525
