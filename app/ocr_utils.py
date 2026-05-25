@@ -8,14 +8,19 @@ Temp files are always cleaned up. Invalid files raise clear errors.
 from __future__ import annotations
 
 import io
+import logging
 import os
 import tempfile
 from typing import List, Set
 
 import cv2
+import numpy as np
 import pytesseract
 from PIL import Image, ImageFilter, ImageEnhance
 import pdfplumber
+
+
+logger = logging.getLogger(__name__)
 
 
 def check_tesseract():
@@ -40,6 +45,8 @@ except ImportError:
 
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi"}
+VIDEO_BLUR_THRESHOLD = 100.0
+MIN_VIDEO_TEXT_LENGTH = 15
 
 
 # ── Preprocessing ─────────────────────────────────────────────────────────────
@@ -65,16 +72,48 @@ def _ocr_image(img: Image.Image, preprocess: bool = True) -> str:
     return pytesseract.image_to_string(img)
 
 
-def _ocr_frame(frame) -> str:
-    """Run OCR on an OpenCV video frame."""
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(rgb_frame)
-    return _ocr_image(pil_image)
+def _frame_blur_score(frame) -> float:
+    """Return a Laplacian-variance blur score for a video frame."""
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    return float(cv2.Laplacian(gray_frame, cv2.CV_64F).var())
+
+
+def _preprocess_video_frame(frame) -> Image.Image:
+    """Preprocess a frame for OCR: grayscale, 2x resize, sharpen, threshold."""
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    resized_frame = cv2.resize(
+        gray_frame,
+        None,
+        fx=2.0,
+        fy=2.0,
+        interpolation=cv2.INTER_CUBIC,
+    )
+    sharpen_kernel = np.array(
+        [[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32
+    )
+    sharpened_frame = cv2.filter2D(resized_frame, -1, sharpen_kernel)
+    _, thresholded_frame = cv2.threshold(
+        sharpened_frame,
+        0,
+        255,
+        cv2.THRESH_BINARY | cv2.THRESH_OTSU,
+    )
+    return Image.fromarray(thresholded_frame)
 
 
 def _normalize_ocr_text(text: str) -> str:
     """Normalize OCR output so duplicate frame text can be skipped."""
     return " ".join(text.split()).strip().lower()
+
+
+def _clean_ocr_lines(text: str) -> List[str]:
+    """Return cleaned OCR lines that are long enough to be meaningful."""
+    lines: List[str] = []
+    for raw_line in text.splitlines():
+        cleaned_line = " ".join(raw_line.split()).strip()
+        if len(cleaned_line) >= MIN_VIDEO_TEXT_LENGTH:
+            lines.append(cleaned_line)
+    return lines
 
 
 def _extract_pdf(file_bytes: bytes) -> str:
@@ -110,7 +149,7 @@ def _extract_docx(file_bytes: bytes) -> str:
 
 
 def extract_video_text(video_path: str) -> str:
-    """Extract OCR text from video frames sampled every 2 seconds."""
+    """Extract OCR text from video frames sampled every second."""
     _, ext = os.path.splitext(video_path.lower())
     if ext not in VIDEO_EXTENSIONS:
         raise ValueError(
@@ -126,26 +165,42 @@ def extract_video_text(video_path: str) -> str:
 
     try:
         parts: List[str] = []
-        seen_text: Set[str] = set()
-        frame_interval_seconds = 2.0
+        seen_lines: Set[str] = set()
+        total_frames_processed = 0
+        ocr_text_extracted = 0
+        blurry_frames_skipped = 0
+        frame_interval_seconds = 1.0
         fps = capture.get(cv2.CAP_PROP_FPS) or 0.0
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        duration_seconds = (frame_count / fps) if fps > 0 and frame_count > 0 else 0.0
 
-        def _append_frame_text(frame_text: str) -> None:
-            normalized = _normalize_ocr_text(frame_text)
-            if normalized and normalized not in seen_text:
-                seen_text.add(normalized)
-                parts.append(frame_text.strip())
+        def _append_unique_lines(frame_text: str) -> None:
+            nonlocal ocr_text_extracted
+            cleaned_lines = _clean_ocr_lines(frame_text)
+            if not cleaned_lines:
+                return
+
+            ocr_text_extracted += 1
+            for line in cleaned_lines:
+                normalized_line = _normalize_ocr_text(line)
+                if normalized_line and normalized_line not in seen_lines:
+                    seen_lines.add(normalized_line)
+                    parts.append(line)
 
         if fps > 0 and frame_count > 0:
-            frame_step = max(int(round(fps * frame_interval_seconds)), 1)
-            for frame_index in range(0, frame_count, frame_step):
-                capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            sample_times = np.arange(0.0, max(duration_seconds, 0.0) + 0.001, frame_interval_seconds)
+            for timestamp_seconds in sample_times:
+                capture.set(cv2.CAP_PROP_POS_MSEC, float(timestamp_seconds) * 1000.0)
                 success, frame = capture.read()
                 if not success:
                     continue
-                frame_text = _ocr_frame(frame)
-                _append_frame_text(frame_text)
+                total_frames_processed += 1
+                if _frame_blur_score(frame) < VIDEO_BLUR_THRESHOLD:
+                    blurry_frames_skipped += 1
+                    continue
+                ocr_frame = _preprocess_video_frame(frame)
+                frame_text = _ocr_image(ocr_frame, preprocess=False)
+                _append_unique_lines(frame_text)
         else:
             max_attempts = 300
             timestamp_seconds = 0.0
@@ -159,13 +214,29 @@ def extract_video_text(video_path: str) -> str:
                     attempts += 1
                     timestamp_seconds += frame_interval_seconds
                     continue
-                frame_text = _ocr_frame(frame)
-                _append_frame_text(frame_text)
+                total_frames_processed += 1
+                if _frame_blur_score(frame) < VIDEO_BLUR_THRESHOLD:
+                    blurry_frames_skipped += 1
+                    attempts += 1
+                    timestamp_seconds += frame_interval_seconds
+                    continue
+                ocr_frame = _preprocess_video_frame(frame)
+                frame_text = _ocr_image(ocr_frame, preprocess=False)
+                _append_unique_lines(frame_text)
                 attempts += 1
                 timestamp_seconds += frame_interval_seconds
 
         if not parts:
-            raise RuntimeError("No OCR text extracted from video.")
+            raise RuntimeError("No meaningful OCR text extracted from video.")
+
+        logger.debug(
+            "Video OCR stats for %s: total_frames_processed=%d, ocr_text_extracted=%d, blurry_frames_skipped=%d, unique_lines=%d",
+            video_path,
+            total_frames_processed,
+            ocr_text_extracted,
+            blurry_frames_skipped,
+            len(parts),
+        )
 
         return "\n\n".join(parts)
     finally:
