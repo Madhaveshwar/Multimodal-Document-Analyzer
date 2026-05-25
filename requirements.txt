@@ -1,0 +1,34 @@
+# ── eshwar — Multimodal Document Analyzer (stable) ───────────────────────────
+# Pydantic v2 is used throughout. All pinned versions verified compatible.
+
+# Web UI
+streamlit>=1.34,<2.0
+
+# OCR & document parsing
+pytesseract>=0.3.10
+pdfplumber>=0.11.0
+pillow>=10.3.0
+python-docx>=1.1.0
+docx2txt>=0.8
+pdf2image>=1.17.0
+opencv-python-headless>=4.9.0
+
+# Environment
+python-dotenv>=1.0.0
+
+# LLM provider SDKs (direct — no LangChain runtime)
+openai>=1.40.0
+google-generativeai>=0.7.0
+anthropic>=0.34.0
+
+# RAG / vector store
+chromadb>=0.5.3
+sentence-transformers>=3.0.0
+
+# Download formats
+reportlab>=4.2.0
+python-docx>=1.1.0
+
+# HTTP / async
+httpx>=0.27.0
+tenacity>=8.3.0
