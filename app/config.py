@@ -58,7 +58,14 @@ class Settings:
 def get_settings() -> Settings:
     environment = os.getenv("APP_ENV") or os.getenv("STREAMLIT_ENV") or "development"
     data_dir = Path(os.getenv("APP_DATA_DIR", DATA_DIR))
-    log_dir = Path(os.getenv("APP_LOG_DIR", LOG_DIR))
+
+    raw_log_dir = os.getenv("APP_LOG_DIR")
+    if raw_log_dir:
+        parsed_log_dir = Path(raw_log_dir)
+        log_dir = parsed_log_dir if parsed_log_dir.is_absolute() else BASE_DIR / parsed_log_dir
+    else:
+        log_dir = LOG_DIR
+
     db_path = Path(os.getenv("APP_DB_PATH", data_dir / "app.sqlite3"))
     return Settings(
         environment=environment,

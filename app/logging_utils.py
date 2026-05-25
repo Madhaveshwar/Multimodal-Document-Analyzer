@@ -53,6 +53,14 @@ def _build_handler(log_file: Path, level: int, category: Optional[str] = None) -
     return handler
 
 
+def _build_console_handler(level: int) -> logging.StreamHandler:
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
+    handler.addFilter(SecretMaskingFilter())
+    return handler
+
+
 def setup_logging() -> None:
     """Configure rotating logs once per process."""
     global _LOGGING_CONFIGURED
@@ -60,8 +68,6 @@ def setup_logging() -> None:
         return
 
     settings = get_settings()
-    settings.log_dir.mkdir(parents=True, exist_ok=True)
-
     root_level = getattr(logging, settings.log_level.upper(), logging.INFO)
     root_logger = logging.getLogger()
     root_logger.setLevel(root_level)
@@ -70,19 +76,29 @@ def setup_logging() -> None:
     for handler in list(root_logger.handlers):
         root_logger.removeHandler(handler)
 
-    general_handler = _build_handler(settings.log_dir / "app.log", root_level)
-    error_handler = _build_handler(settings.log_dir / "error.log", logging.ERROR)
-    request_handler = _build_handler(settings.log_dir / "request.log", root_level, category="request")
-    ocr_handler = _build_handler(settings.log_dir / "ocr.log", root_level, category="ocr")
-    provider_handler = _build_handler(settings.log_dir / "provider.log", root_level, category="provider")
+    console_handler = _build_console_handler(root_level)
+    root_logger.addHandler(console_handler)
 
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(root_level)
-    console_handler.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
-    console_handler.addFilter(SecretMaskingFilter())
+    log_dir = Path(settings.log_dir)
+    log_dir_ready = False
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir_ready = True
+    except OSError as exc:
+        logging.getLogger(__name__).warning(
+            "Unable to create log directory %s; continuing with console logging only. Error: %s",
+            log_dir,
+            exc,
+        )
 
-    for handler in [general_handler, error_handler, request_handler, ocr_handler, provider_handler, console_handler]:
-        root_logger.addHandler(handler)
+    if log_dir_ready:
+        general_handler = _build_handler(log_dir / "app.log", root_level)
+        error_handler = _build_handler(log_dir / "error.log", logging.ERROR)
+        request_handler = _build_handler(log_dir / "request.log", root_level, category="request")
+        ocr_handler = _build_handler(log_dir / "ocr.log", root_level, category="ocr")
+        provider_handler = _build_handler(log_dir / "provider.log", root_level, category="provider")
+        for handler in [general_handler, error_handler, request_handler, ocr_handler, provider_handler]:
+            root_logger.addHandler(handler)
 
     logging.getLogger("app.request").propagate = True
     logging.getLogger("app.ocr").propagate = True
