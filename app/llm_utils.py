@@ -1,5 +1,5 @@
 """
-llm_utils.py — LLM provider wrappers with retry + fallback logic.
+llm_utils.py - LLM provider wrappers with retry + fallback logic.
 
 Providers
 ---------
@@ -31,14 +31,14 @@ from tracing_utils import traceable
 
 logger = logging.getLogger(__name__)
 
-# ── Allowed Gemini models ───────────────────────────────────────────────────
+# GöÇGöÇ Allowed Gemini models GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 GEMINI_MODELS = [
     "gemini-2.5-flash",
     "gemini-2.5-pro",
 ]
 
-# ── Allowed models (current, non-deprecated) ─────────────────────────────────
+# GöÇGöÇ Allowed models (current, non-deprecated) GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 PROVIDER_MODELS: dict[str, List[str]] = {
     "Gemini": GEMINI_MODELS,
@@ -48,9 +48,9 @@ PROVIDER_MODELS: dict[str, List[str]] = {
         "gpt-3.5-turbo",
     ],
     "Groq": [
-        "llama-3.3-70b-versatile",   # primary — fast & capable
-        "llama-3.1-8b-instant",      # fallback — very fast
-        "mixtral-8x7b-32768",        # fallback — large context
+        "llama-3.3-70b-versatile",   # primary - fast and capable
+        "llama-3.1-8b-instant",      # fallback - very fast
+        "mixtral-8x7b-32768",        # fallback - large context
     ],
     "Claude": [
         "claude-3-5-haiku-20241022",
@@ -61,7 +61,7 @@ PROVIDER_MODELS: dict[str, List[str]] = {
 SUMMARY_MODES = ["Concise", "Detailed", "Bullet Points", "Executive", "Technical"]
 TONES = ["Neutral", "Formal", "Casual", "Academic"]
 
-# ── Key helper ────────────────────────────────────────────────────────────────
+# GöÇGöÇ Key helper GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 def _get_key(env_var: str, explicit: Optional[str]) -> str:
     key = explicit or os.getenv(env_var, "")
@@ -72,7 +72,7 @@ def _get_key(env_var: str, explicit: Optional[str]) -> str:
     return key.strip()
 
 
-# ── Retry decorator (shared) ──────────────────────────────────────────────────
+# GöÇGöÇ Retry decorator (shared) GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 def _make_retry():
     """3 attempts with exponential back-off for transient errors."""
@@ -84,7 +84,7 @@ def _make_retry():
     )
 
 
-# ── Prompt builder ────────────────────────────────────────────────────────────
+# GöÇGöÇ Prompt builder GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 def _build_prompt(text: str, mode: str = "Concise", tone: str = "Neutral") -> str:
     mode_instructions = {
@@ -182,7 +182,7 @@ def _compose_grounded_prompt(
     )
 
 
-# ── Gemini error classifier ───────────────────────────────────────────────────
+# GöÇGöÇ Gemini error classifier GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 def _classify_gemini_error(exc: Exception) -> str:
     """
@@ -197,7 +197,7 @@ def _classify_gemini_error(exc: Exception) -> str:
                                "invalid api key", "unauthenticated",
                                "401", "403")):
         return (
-            "🔑 **Invalid or expired Gemini API key.**\n\n"
+            "=ƒöæ **Invalid or expired Gemini API key.**\n\n"
             "Please check your key at https://aistudio.google.com/app/apikey "
             "and paste the correct value in the sidebar."
         )
@@ -206,7 +206,7 @@ def _classify_gemini_error(exc: Exception) -> str:
     if any(k in msg for k in ("quota", "rate limit", "resource_exhausted",
                                "429", "too many requests")):
         return (
-            "⏳ **Gemini quota exceeded or rate limit hit.**\n\n"
+            "GÅ¦ **Gemini quota exceeded or rate limit hit.**\n\n"
             "Wait a moment and try again, or switch to a different model "
             "(e.g. gemini-2.5-flash) in the sidebar."
         )
@@ -215,7 +215,7 @@ def _classify_gemini_error(exc: Exception) -> str:
     if any(k in msg for k in ("model not found", "not_found", "404",
                                "does not exist", "model_not_found")):
         return (
-            "🤖 **Gemini model not found.**\n\n"
+            "=ƒñû **Gemini model not found.**\n\n"
             f"The selected model is unavailable. "
             "Try **gemini-2.5-flash** or **gemini-2.5-pro** from the sidebar."
         )
@@ -224,7 +224,7 @@ def _classify_gemini_error(exc: Exception) -> str:
     if any(k in msg for k in ("permission_denied", "billing", "disabled",
                                "access", "forbidden")):
         return (
-            "🚫 **Gemini API access denied.**\n\n"
+            "=ƒÜ½ **Gemini API access denied.**\n\n"
             "Ensure billing is enabled on your Google Cloud project "
             "and the Generative Language API is activated."
         )
@@ -233,15 +233,15 @@ def _classify_gemini_error(exc: Exception) -> str:
     if any(k in msg for k in ("connection", "timeout", "network", "dns",
                                "unreachable", "socket")):
         return (
-            "🌐 **Network error connecting to Gemini.**\n\n"
+            "=ƒîÉ **Network error connecting to Gemini.**\n\n"
             "Check your internet connection and try again."
         )
 
-    # Fallback — show cleaned message without raw traceback
-    return f"⚠️ **Gemini error:** {str(exc)}"
+    # Fallback - show cleaned message without raw traceback
+    return f"GÜán+Å **Gemini error:** {str(exc)}"
 
 
-# ── Core generate function (exact requested implementation) ───────────────────
+# GöÇGöÇ Core generate function (exact requested implementation) GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 import google.generativeai as genai
 
@@ -265,7 +265,7 @@ class GeminiAPIError(Exception):
     """Clean, user-facing Gemini error (no raw traceback)."""
 
 
-# ── Provider implementations ──────────────────────────────────────────────────
+# GöÇGöÇ Provider implementations GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 @traceable(name="Generate Summary", run_type="chain")
 def _summarize_gemini(text: str, api_key: str, model: str,
@@ -391,7 +391,7 @@ def _summarize_claude(text: str, api_key: str, model: str,
     return _call()
 
 
-# ── Unified entry point ───────────────────────────────────────────────────────
+# GöÇGöÇ Unified entry point GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 @traceable(name="Generate Summary", run_type="chain")
 def summarize_text(
@@ -441,7 +441,7 @@ def summarize_text(
     return dispatch[provider](text, key, chosen_model, mode, tone)
 
 
-# ── RAG / chat helpers ────────────────────────────────────────────────────────
+# GöÇGöÇ RAG / chat helpers GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
     """Split text into overlapping word-level chunks for embedding."""
@@ -523,16 +523,16 @@ def analyze_resume_text(
     base_prompt = (
         "You are an expert HR recruiter and resume analyst.\n"
         "Analyze the following resume and provide:\n"
-        "1. **Strengths** — top 3 strong points\n"
-        "2. **Weaknesses** — top 3 areas to improve\n"
-        "3. **Key Skills** — list detected technical and soft skills\n"
-        "4. **Experience Summary** — 2-3 sentences\n"
-        "5. **ATS Score (0-100)** — estimated applicant tracking score\n"
+        "1. **Strengths** - top 3 strong points\n"
+        "2. **Weaknesses** - top 3 areas to improve\n"
+        "3. **Key Skills** - list detected technical and soft skills\n"
+        "4. **Experience Summary** - 2-3 sentences\n"
+        "5. **ATS Score (0-100)** - estimated applicant tracking score\n"
     )
     if job_desc.strip():
         base_prompt += (
-            "6. **Job Match %** — how well this resume matches the job description below\n"
-            "7. **Gaps** — what's missing for the role\n\n"
+            "6. **Job Match %** - how well this resume matches the job description below\n"
+            "7. **Gaps** - what's missing for the role\n\n"
             f"Job Description:\n{job_desc}\n\n"
         )
     base_prompt += f"\nResume:\n{resume_text[:8000]}"

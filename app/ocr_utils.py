@@ -1,5 +1,5 @@
 """
-ocr_utils.py — Text extraction from PDF / DOCX / image / video files.
+ocr_utils.py - Text extraction from PDF / DOCX / image / video files.
 
 Supports: JPEG, PNG, PDF (native + OCR fallback), DOCX, MP4, MOV, AVI.
 Temp files are always cleaned up. Invalid files raise clear errors.
@@ -183,7 +183,7 @@ def _enhance_array_for_ocr(gray_array: np.ndarray, aggressive: bool = False) -> 
     return thresholded
 
 
-# ── Preprocessing ─────────────────────────────────────────────────────────────
+# Preprocessing
 
 def _preprocess_image(img: Image.Image, aggressive: bool = False) -> Image.Image:
     """Improve OCR quality with resize, denoise, contrast, sharpen, and thresholding."""
@@ -227,7 +227,7 @@ def _frame_empty_score(frame: np.ndarray) -> float:
     return float(np.std(gray_frame))
 
 
-# ── Core OCR helpers ──────────────────────────────────────────────────────────
+# Core OCR helpers
 
 def _run_tesseract(img: Image.Image, psm: int = 6) -> Tuple[str, float]:
     """Run Tesseract and return merged text plus a mean confidence score."""
@@ -581,7 +581,7 @@ def extract_video_text(video_path: str) -> str:
         capture.release()
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
+# GöÇGöÇ Public API GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".pdf", ".docx"}
 

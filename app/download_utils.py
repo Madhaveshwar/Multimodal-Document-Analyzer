@@ -1,6 +1,4 @@
-"""
-download_utils.py — Generate downloadable TXT, PDF, and DOCX from summary text.
-"""
+"""Generate downloadable TXT, PDF, and DOCX files from summary text."""
 
 from __future__ import annotations
 
@@ -97,7 +95,7 @@ def _format_chat_messages(messages: Iterable[dict]) -> str:
                 page_label = f"p.{page_number}" if isinstance(page_number, int) and page_number > 0 else "p.n/a"
                 citation = source.get("citation", source_index)
                 chunk_source = source.get("chunk_source", "unknown")
-                lines.append(f"  [{citation}] {filename} {page_label} · {chunk_source}")
+                lines.append(f"  [{citation}] {filename} {page_label} - {chunk_source}")
                 source_text = str(source.get("text", "")).strip()
                 if source_text:
                     lines.append(f"    {source_text}")

@@ -1,5 +1,5 @@
 """
-rag_utils.py — Lightweight RAG: embed → store → retrieve.
+rag_utils.py - Lightweight RAG: embed, store, retrieve.
 
 Uses sentence-transformers for local embeddings and ChromaDB as the
 in-memory vector store. No external embedding API calls needed.
@@ -18,7 +18,7 @@ from tracing_utils import traceable
 
 logger = logging.getLogger(__name__)
 
-_COLLECTION_NAME = "eshwar_rag"
+_COLLECTION_NAME = "multimodal_ai_rag"
 _EMBED_MODEL = "all-MiniLM-L6-v2"
 _MAX_CHUNKS_PER_DOCUMENT = 400
 _MIN_CHUNK_CHARS = 40

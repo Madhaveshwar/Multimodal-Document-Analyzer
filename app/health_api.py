@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from health_utils import get_health_report
 
-app = FastAPI(title="Eshwar Health API", version="1.0.0")
+app = FastAPI(title="Multimodal AI Health API", version="1.0.0")
 
 
 @app.get("/health")
@@ -22,4 +22,4 @@ def health() -> JSONResponse:
 
 @app.get("/")
 def root() -> JSONResponse:
-    return JSONResponse({"service": "eshwar-health", "status": "ok"})
+    return JSONResponse({"service": "multimodal-ai-health", "status": "ok"})

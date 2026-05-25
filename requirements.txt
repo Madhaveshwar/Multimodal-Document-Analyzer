@@ -16,8 +16,11 @@ moviepy>=1.0.3
 
 # Environment
 python-dotenv>=1.0.0
+<<<<<<< HEAD
 langsmith>=0.1.0
 langchain>=0.2.0
+=======
+>>>>>>> eb3e5fd1243b399c1b484e8468c3e4b3de7c7525
 
 # LLM provider SDKs (direct — no LangChain runtime)
 openai>=1.40.0
@@ -35,7 +38,10 @@ python-docx>=1.1.0
 # HTTP / async
 httpx>=0.27.0
 tenacity>=8.3.0
+<<<<<<< HEAD
 
 # Deployment / health
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
+=======
+>>>>>>> eb3e5fd1243b399c1b484e8468c3e4b3de7c7525
