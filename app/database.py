@@ -18,7 +18,8 @@ from security_utils import generate_session_token, hash_password, verify_passwor
 
 logger = get_logger("app.database")
 
-SETTINGS = get_settings()
+import os
+SETTINGS = os.environ.get('SETTINGS', get_settings())
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = SETTINGS.data_dir
 DB_PATH = SETTINGS.db_path
